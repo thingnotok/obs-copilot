@@ -1,0 +1,11 @@
+.options {
+  @apply container;
+
+  h1 {
+    @apply text-2xl font-bold;
+  }
+
+  .selection {
+    @apply w-full min-w-full;
+  }
+}
