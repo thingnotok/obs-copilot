@@ -15,7 +15,7 @@ import {
 } from '@/config';
 
 async function getBase64ImageJPG(imgUrl, callback) {
-  console.log(imgUrl);
+  console.log('Get base64 image: ', imgUrl);
   var img = new Image();
   img.onload = function () {
     var canvas = document.createElement('canvas');
@@ -36,18 +36,8 @@ async function getBase64ImageJPG(imgUrl, callback) {
 const Newtab = () => {
   const bgRef = React.useRef<HTMLDivElement>(null);
   const [init, setInit] = React.useState(false);
-
-  const [wallPaper, setwallPaper] = React.useState('');
   useEffect(() => {
-    if (!init) {
-      getLogseqCopliotConfig().then((config) => {
-        setInit(true);
-        setwallPaper(config?.wallPaper || '');
-        console.log('set wallpaper: ', config?.wallPaper);
-      });
-    }
-
-    const fetchImage = async () => {
+    const fetchImage = async (wallPaperUrl: string) => {
       const result = await Browser.storage.local.get(['cachedImg']);
       let img = '';
       if (result.cachedImg) {
@@ -59,12 +49,20 @@ const Newtab = () => {
         bgRef.current.style.backgroundImage = img;
       }
 
-      getBase64ImageJPG(wallPaper, (base64Image: string) => {
+      getBase64ImageJPG(wallPaperUrl, (base64Image: string) => {
+        if (bgRef.current) {
+          bgRef.current.style.backgroundImage = base64Image;
+        }
         Browser.storage.local.set({ cachedImg: base64Image });
       });
     };
-
-    fetchImage();
+    console.log('init: ', init);
+    if (!init) {
+      getLogseqCopliotConfig().then((config) => {
+        setInit(true);
+        fetchImage(config?.wallPaper);
+      });
+    }
   }, []);
 
   return (
