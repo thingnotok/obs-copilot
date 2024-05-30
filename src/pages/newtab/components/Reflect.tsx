@@ -111,6 +111,17 @@ export const reflectRenderer = () => {
 
   useEffect(() => {
     updatePrompt();
+    if (!init) {
+      getLogseqCopliotConfig().then((config) => {
+        console.log(config);
+        setInit(true);
+        client.apiKey = config?.logseqAuthToken || '';
+        client.url = config?.logseqHostName || '';
+        client.port = config?.logseqPort || 0;
+        console.log(client);
+        updateJournal();
+      });
+    }
   }, []);
   return (
     <div className={styles.mainPanel}>

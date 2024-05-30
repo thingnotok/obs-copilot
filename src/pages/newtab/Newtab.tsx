@@ -5,7 +5,6 @@ import Browser from 'webextension-polyfill';
 import { Divider } from '@chakra-ui/react';
 import React, { useEffect } from 'react';
 
-import { reflectRenderer } from './components/Reflect';
 import { greetingRenderer } from './components/Daily';
 
 import {
@@ -14,20 +13,23 @@ import {
   LogseqCopliotConfig,
 } from '@/config';
 
-async function getBase64ImageJPG(imgUrl, callback) {
+async function getBase64ImageJPG(
+  imgUrl: string,
+  callback: (base64: string) => void,
+) {
   console.log('Get base64 image: ', imgUrl);
   var img = new Image();
   img.onload = function () {
     var canvas = document.createElement('canvas');
-    canvas.width = this.width;
-    canvas.height = this.height;
+    canvas.width = img.width;
+    canvas.height = img.height;
 
     var ctx = canvas.getContext('2d');
-    ctx.drawImage(this, 0, 0);
-
-    // 指定轉換格式為JPG
-    var dataURL = canvas.toDataURL('image/jpeg');
-    callback(dataURL);
+    if (ctx) {
+      ctx.drawImage(this as HTMLImageElement, 0, 0); // Cast 'this' to HTMLImageElement
+      var base64 = canvas.toDataURL('image/jpeg');
+      callback(base64);
+    }
   };
   img.setAttribute('crossOrigin', 'anonymous'); // 需要圖片支持跨域訪問
   img.src = imgUrl;
@@ -74,7 +76,6 @@ const Newtab = () => {
       <div className={styles.fullscreenBg} ref={bgRef}></div>
       {greetingRenderer()}
       <Daily />
-      {reflectRenderer()}
     </>
   );
 };
