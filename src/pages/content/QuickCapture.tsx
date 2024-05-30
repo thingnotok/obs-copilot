@@ -8,9 +8,12 @@ import scssStyles from './index.module.scss';
 const logseqCopilotPopupId = 'logseq-copilot-popup';
 export const zIndex = '2147483647';
 const highlights = CSS.highlights;
+import { client } from '@pages/logseq/client';
 
 const capture = () => {
   const selection = getSelection();
+  console.log('capture!!', selection);
+  console.log('client', client);
   if (selection !== null) {
     const range = selection.getRangeAt(0);
     setHighlight(range);
@@ -28,22 +31,21 @@ const capture = () => {
 
 const clipPage = () => {
   Browser.runtime.sendMessage({
-    type: 'clip-page'
-  })
+    type: 'clip-page',
+  });
 };
 
 const setHighlight = (range: Range) => {
   try {
-    if (!highlights.has("copilot-highlight")) {
-      highlights.set('copilot-highlight', new Highlight())
+    if (!highlights.has('copilot-highlight')) {
+      highlights.set('copilot-highlight', new Highlight());
     }
     const highlight = highlights.get('copilot-highlight');
     highlight.add(range);
   } catch (error) {
-    console.debug("platform not support highlight function")
+    console.debug('platform not support highlight function');
   }
-}
-
+};
 
 Browser.runtime.onMessage.addListener((request) => {
   if (request.type === 'clip-with-selection' || request.type === 'clip') {
@@ -60,23 +62,24 @@ const QuickCapture = () => {
   });
   const [show, setShow] = useState(false);
 
-
-
   const clicked = (event: MouseEvent) => {
     const selection = getSelection();
     const haveSelection = selection && selection.toString().trim().length > 0;
-    const isButton = event.target && event.target.className && event.target.className.includes("quickCapture")
+    const isButton =
+      event.target &&
+      event.target.className &&
+      event.target.className.includes('quickCapture');
     if (isButton) {
-      if (event.type === "mouseup") {
+      if (event.type === 'mouseup') {
         setShow(false);
       }
       return;
     }
-    if (haveSelection && event.type === "mouseup") {
+    if (haveSelection && event.type === 'mouseup') {
       setShow(true);
       setPostion({ x: event.pageX + 10, y: event.pageY + 10 });
     } else {
-      setShow(false)
+      setShow(false);
     }
   };
 

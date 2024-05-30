@@ -6,8 +6,12 @@ import { debounce } from '@/utils';
 import { format } from 'date-fns';
 import { changeOptionsHostToHostNameAndPort } from './upgrade';
 import LogseqService from '@pages/logseq/service';
-
-const logseqClient = new LogseqClient();
+import { client } from '@pages/logseq/client';
+import {
+  getToday,
+  getCurrentTimeList,
+  getCurrentDateDay,
+} from '@pages/newtab/components/Utils';
 const logseqService = new LogseqService();
 
 browser.runtime.onConnect.addListener((port) => {
@@ -28,6 +32,7 @@ browser.runtime.onConnect.addListener((port) => {
 });
 
 browser.runtime.onMessage.addListener((msg, sender) => {
+  console.log('onMessage', msg);
   if (msg.type === 'open-options') {
     browser.runtime.openOptionsPage();
   } else if (msg.type === 'clip-with-selection') {
@@ -73,49 +78,39 @@ const quickCapture = async (data: string) => {
   const tab = await getCurrentTab();
   if (!tab) return;
   const activeTab = tab;
-  const { clipNoteLocation, clipNoteCustomPage, clipNoteTemplate } =
-    await getLogseqCopliotConfig();
-  const now = new Date();
-  // const resp = await logseqClient.getUserConfig();
-
-  // const block = blockRending({
-  //   url: activeTab.url,
-  //   title: activeTab.title,
-  //   data,
-  //   clipNoteTemplate,
-  //   preferredDateFormat: resp['preferredDateFormat'],
-  //   time: now,
-  // });
-
-  // if (clipNoteLocation === 'customPage') {
-  //   await logseqClient.appendBlock(clipNoteCustomPage, block);
-  // } else if (clipNoteLocation === 'currentPage') {
-  //   const { name: currentPage } = await logseqClient.getCurrentPage();
-  //   await logseqClient.appendBlock(currentPage, block);
-  // } else {
-  //   const journalPage = format(now, resp['preferredDateFormat']);
-  //   await logseqClient.appendBlock(journalPage, block);
-  // }
-
-  // debounceBadgeSearch(activeTab.url, activeTab.id!);
+  getLogseqCopliotConfig().then((config) => {
+    console.log(config);
+    client.apiKey = config?.logseqAuthToken || '';
+    client.url = config?.logseqHostName || '';
+    client.port = 27123; //config?.logseqPort || 0;
+    let dout = `- ${getCurrentTimeList()} ${data} [>](${activeTab.url})`;
+    if (data === '') {
+      dout = `- ${getCurrentTimeList()} [${activeTab.title}](${activeTab.url})`;
+    }
+    client.append(`journals/${getToday()}.md`, dout).catch((error) => {
+      if (error.response && error.response.status !== 204) {
+        console.error('Error in client.append:', error);
+      }
+    });
+  });
 };
 
-// browser.tabs.onActivated.addListener((activeInfo) => {
-//   const promise = new Promise(async () => {
-//     const tab = await browser.tabs.get(activeInfo.tabId);
-//     await debounceBadgeSearch(tab.url, activeInfo.tabId);
-//   });
-//   promise.catch((err) => console.error(err));
-// });
+browser.tabs.onActivated.addListener((activeInfo) => {
+  const promise = new Promise(async () => {
+    const tab = await browser.tabs.get(activeInfo.tabId);
+    await debounceBadgeSearch(tab.url, activeInfo.tabId);
+  });
+  promise.catch((err) => console.error(err));
+});
 
-// browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-//   if (tab.active && changeInfo.status === 'complete') {
-//     const promise = new Promise(async () => {
-//       await debounceBadgeSearch(tab.url, tabId);
-//     });
-//     promise.catch((err) => console.error(err));
-//   }
-// });
+browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (tab.active && changeInfo.status === 'complete') {
+    const promise = new Promise(async () => {
+      await debounceBadgeSearch(tab.url, tabId);
+    });
+    promise.catch((err) => console.error(err));
+  }
+});
 
 const badgeSearch = async (url: string | undefined, tabId: number) => {
   if (!url) return;
@@ -150,7 +145,13 @@ try {
 }
 
 browser.contextMenus.onClicked.addListener((info, tab) => {
-  browser.tabs.sendMessage(tab!.id!, { type: info.menuItemId }, {});
+  console.log('right click', info, tab);
+  console.log(client);
+  browser.tabs.sendMessage(
+    tab!.id!,
+    { type: info.menuItemId, url: info.pageUrl },
+    {},
+  );
 });
 
 browser.runtime.onInstalled.addListener((event) => {

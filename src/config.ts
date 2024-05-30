@@ -18,16 +18,16 @@ export const getLogseqCopliotConfig =
   async (): Promise<LogseqCopliotConfig> => {
     const {
       version = '',
-      logseqHost = 'http://localhost:12315',
-      logseqHostName = 'localhost',
-      logseqPort = 12315,
+      logseqHost = 'http://127.0.0.1:27123',
+      logseqHostName = '127.0.0.1',
+      logseqPort = 27123,
       logseqAuthToken = '',
       enableClipNoteFloatButton = false,
-      clipNoteLocation = "journal",
-      clipNoteCustomPage = "",
+      clipNoteLocation = 'journal',
+      clipNoteCustomPage = '',
       clipNoteTemplate = `#[[Clip]] [{{title}}]({{url}})
 {{content}}`,
-      userName = "",
+      userName = '',
       wallPaper = 'https://source.unsplash.com/random/400%C3%97400/?travel,starnight,sunshine',
     } = await Browser.storage.local.get();
     return {
@@ -41,7 +41,7 @@ export const getLogseqCopliotConfig =
       clipNoteCustomPage,
       clipNoteTemplate,
       userName,
-      wallPaper
+      wallPaper,
     };
   };
 

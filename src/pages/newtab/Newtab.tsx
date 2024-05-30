@@ -43,7 +43,11 @@ const Newtab = () => {
       if (result.cachedImg) {
         img = 'url("' + result.cachedImg + '")';
       } else {
-        img = 'url("assets/img/wallpaper.jpg")';
+        getBase64ImageJPG(wallPaperUrl, (base64Image: string) => {
+          if (bgRef.current) {
+            bgRef.current.style.backgroundImage = base64Image;
+          }
+        });
       }
       if (bgRef.current) {
         bgRef.current.style.backgroundImage = img;

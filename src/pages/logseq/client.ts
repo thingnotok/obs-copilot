@@ -5,7 +5,7 @@ export default class ObsidianClient {
   public baseFetch = async () => {
     const text = `https://${this.url}:${this.port}`;
     console.log(text);
-    const endPoint = new URL(`https://${this.url}:${this.port}`);
+    const endPoint = new URL(`http://${this.url}:${this.port}`);
     const apiUrl = new URL(`${endPoint.origin}/periodic/daily/`);
     const resp = await fetch(apiUrl, {
       mode: 'cors',
@@ -24,7 +24,7 @@ export default class ObsidianClient {
   };
   public append = async (dst: string, content: string) => {
     console.log(content);
-    const endPoint = new URL('https://127.0.0.1:27124');
+    const endPoint = new URL(`http://${this.url}:${this.port}`);
     const apiUrl = new URL(`${endPoint.origin}/vault/${dst}`);
     const resp = await fetch(apiUrl, {
       mode: 'cors',
@@ -45,7 +45,7 @@ export default class ObsidianClient {
   };
   public update = async (dst: string, content: string) => {
     console.log(content);
-    const endPoint = new URL('https://127.0.0.1:27124');
+    const endPoint = new URL(`http://${this.url}:${this.port}`);
     const apiUrl = new URL(`${endPoint.origin}/vault/${dst}`);
     const resp = await fetch(apiUrl, {
       mode: 'cors',
