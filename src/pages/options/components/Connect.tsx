@@ -25,7 +25,7 @@ export const LogseqConnectOptions = () => {
   const [init, setInit] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [connected, setConnected] = React.useState(false);
-  const [buttonMessage, setButtonMessage] = React.useState('Connect');
+  const [buttonMessage, setButtonMessage] = React.useState('Save');
   const [showToken, setShowToken] = React.useState(false);
   const [logseqConfig, setLogseqConfig] = React.useState<LogseqCopliotConfig>();
 
@@ -38,13 +38,13 @@ export const LogseqConnectOptions = () => {
 
   const changeLogseqPort = (port: string) => {
     if (port === '' || parseInt(port) < 0) {
-      port='0'
+      port = '0';
     }
     setLogseqConfig({
       ...logseqConfig,
       logseqPort: parseInt(port),
     });
-  }
+  };
 
   const triggerShowToken = () => setShowToken(!showToken);
 
@@ -62,8 +62,10 @@ export const LogseqConnectOptions = () => {
         logseqAuthToken: logseqConfig!.logseqAuthToken,
         logseqHostName: logseqConfig?.logseqHostName,
         logseqPort: logseqConfig?.logseqPort,
-        userName: logseqConfig?.userName || "Empty User",
-        wallPaper: logseqConfig?.wallPaper|| "https://source.unsplash.com/random/400%C3%97400/?travel,starnight,sunshine",
+        userName: logseqConfig?.userName || 'Empty User',
+        wallPaper:
+          logseqConfig?.wallPaper ||
+          'https://source.unsplash.com/random/400%C3%97400/?travel,starnight,sunshine',
       });
       if (await checkConnection()) {
         const graph = await client.getGraph();
@@ -77,7 +79,7 @@ export const LogseqConnectOptions = () => {
     if (!init) {
       getLogseqCopliotConfig().then((config) => {
         console.log('inti');
-        console.log(config)
+        console.log(config);
         setLogseqConfig(config);
         setInit(true);
         if (config.logseqAuthToken === '') {
@@ -153,38 +155,24 @@ export const LogseqConnectOptions = () => {
             </Button>
           </InputRightElement>
         </InputGroup>
-        <Button
-          gridColumn={'1 / span 3'}
-          onClick={save}
-          variant="outline"
-          colorScheme={!connected ? 'red' : 'green'}
-          isLoading={loading}
-        >
-          {buttonMessage}
-        </Button>
-        <Text gridColumn={'1 / span 3'} justifySelf={'end'}>
-          <Link
-            color={!connected ? 'red' : undefined}
-            href="https://github.com/eindex/logseq-copilot#usage"
-          >
-            Guide to Connection
-          </Link>
-        </Text>
       </Grid>
       <Input
-            name="userName"
-            type={'text'}
-            onChange={onChange}
-            value={logseqConfig?.userName}
-            placeholder="your name"
-          />
+        name="userName"
+        type={'text'}
+        onChange={onChange}
+        value={logseqConfig?.userName}
+        placeholder="your name"
+      />
       <Input
-            name="wallPaper"
-            type={'text'}
-            onChange={onChange}
-            value={logseqConfig?.wallPaper}
-            placeholder="unsplash image/category url"
-          />
+        name="wallPaper"
+        type={'text'}
+        onChange={onChange}
+        value={logseqConfig?.wallPaper}
+        placeholder="unsplash image/category url"
+      />
+      <Button gridColumn={'1 / span 3'} onClick={save} variant="outline">
+        {buttonMessage}
+      </Button>
     </>
   );
 };

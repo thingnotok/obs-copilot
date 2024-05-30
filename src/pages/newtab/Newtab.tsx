@@ -1,13 +1,18 @@
 import { Daily } from './components/Daily';
-// import {Journaling} from './components/Journaling';
-import { ClipNoteOptions } from './components/ClipNote';
 import styles from './Newtab.module.scss';
+import Browser from 'webextension-polyfill';
 // let dateTime = new Date()
 import { Divider } from '@chakra-ui/react';
 import React, { useEffect } from 'react';
 
 import { reflectRenderer } from './components/Reflect';
 import { greetingRenderer } from './components/Daily';
+
+import {
+  getLogseqCopliotConfig,
+  saveLogseqCopliotConfig,
+  LogseqCopliotConfig,
+} from '@/config';
 
 async function getBase64ImageJPG(imgUrl, callback) {
   console.log(imgUrl);
@@ -30,11 +35,20 @@ async function getBase64ImageJPG(imgUrl, callback) {
 
 const Newtab = () => {
   const bgRef = React.useRef<HTMLDivElement>(null);
-  const [wallPaper, setwallPaper] = React.useState(
-    'https://source.unsplash.com/random/400%C3%97400/?travel,starnight,sunshine',
-  );
+  const [init, setInit] = React.useState(false);
+
+  const [wallPaper, setwallPaper] = React.useState('');
   useEffect(() => {
-    chrome.storage.local.get(['cachedImg'], function (result: any) {
+    if (!init) {
+      getLogseqCopliotConfig().then((config) => {
+        setInit(true);
+        setwallPaper(config?.wallPaper || '');
+        console.log('set wallpaper: ', config?.wallPaper);
+      });
+    }
+
+    const fetchImage = async () => {
+      const result = await Browser.storage.local.get(['cachedImg']);
       let img = '';
       if (result.cachedImg) {
         img = 'url("' + result.cachedImg + '")';
@@ -43,13 +57,16 @@ const Newtab = () => {
       }
       if (bgRef.current) {
         bgRef.current.style.backgroundImage = img;
-        // }
       }
-    });
-    getBase64ImageJPG(wallPaper, (base64Image: string) => {
-      chrome.storage.local.set({ cachedImg: base64Image }, function () {});
-    });
+
+      getBase64ImageJPG(wallPaper, (base64Image: string) => {
+        Browser.storage.local.set({ cachedImg: base64Image });
+      });
+    };
+
+    fetchImage();
   }, []);
+
   return (
     <>
       <div className={styles.fullscreenBg} ref={bgRef}></div>

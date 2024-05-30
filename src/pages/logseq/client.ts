@@ -1,12 +1,17 @@
 export default class ObsidianClient {
+  apiKey = '';
+  url = '';
+  port = 0;
   public baseFetch = async () => {
-    const endPoint = new URL('https://127.0.0.1:27124');
+    const text = `https://${this.url}:${this.port}`;
+    console.log(text);
+    const endPoint = new URL(`https://${this.url}:${this.port}`);
     const apiUrl = new URL(`${endPoint.origin}/periodic/daily/`);
     const resp = await fetch(apiUrl, {
       mode: 'cors',
       method: 'GET',
       headers: {
-        Authorization: `Bearer 114768ffdfe091540af89adbfc45d9a03bb88b50d8dda5c783c87d6dd10b2be8`,
+        Authorization: `Bearer ${this.apiKey}`,
         accept: 'text/markdown',
       },
     });

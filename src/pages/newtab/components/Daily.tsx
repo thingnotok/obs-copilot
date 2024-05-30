@@ -1,20 +1,14 @@
-import { createGlobalStyle } from 'styled-components';
-import { LogseqBlockType, LogseqPageIdenity } from '../../../types/logseqBlock';
 import React, { useEffect, useState } from 'react';
+import Browser from 'webextension-polyfill';
 import styles from '../Newtab.module.scss';
 import { Prompts, CATEGORIES } from './Journaling';
-import {
-  Flex,
-  Container,
-  Heading,
-  Text,
-  Link,
-  Divider,
-  background,
-} from '@chakra-ui/react';
+import { Heading, Text } from '@chakra-ui/react';
 
-import { reflectRenderer } from './Reflect';
-// import chrome from 'chrome';
+import {
+  getLogseqCopliotConfig,
+  saveLogseqCopliotConfig,
+  LogseqCopliotConfig,
+} from '@/config';
 
 import { client } from '@pages/logseq/client';
 import {
@@ -194,18 +188,12 @@ const MarkdownRenderer = ({
 }) => {
   const tree = createTree(markdown);
 
-  console.log(tree);
-  const renderNode = (node: Node) => {
+  const renderNode = (node: Node): JSX.Element => {
     const jsx = [];
     for (const child of node.children) {
       jsx.push(renderNode(child));
     }
     jsx.unshift(<LineRenderer node={node} tree={tree} update={update} />);
-    // if (text.startsWith('- [ ]') || text.startsWith('- [x]')) {
-    //   jsx.push(<TaskRenderer node={node} tree={tree} update={update} />);
-    // } else if (text.startsWith('- ')) {
-    //   jsx.unshift(<ListRenderer node={node} tree={tree} update={update} />);
-    // }
     if (node.level < 0) return <>{jsx}</>;
     else if (node.level === 0)
       return (
@@ -235,11 +223,12 @@ const HabitTracker = ({
   const [count, setCount] = useState(0);
   const [isDisabled, setIsDisabled] = useState(false);
   useEffect(() => {
-    chrome.storage.local.get(['updateDate', habit], (result: any) => {
+    async function getHabit() {
+      const result = await Browser.storage.local.get([habit, 'updateDate']);
       const today = getToday();
       console.log(result);
       if (result.updateDate !== today || !result[habit]) {
-        chrome.storage.local.set({ [habit]: 0, updateDate: today });
+        browser.storage.local.set({ [habit]: 0, updateDate: today });
         setCount(0);
       } else {
         if (result[habit] >= 100) {
@@ -247,7 +236,8 @@ const HabitTracker = ({
         }
         setCount(result[habit]);
       }
-    });
+    }
+    getHabit();
   }, []);
   const callbackFunction = async () => {
     console.log('Count reached 100!');
@@ -269,10 +259,7 @@ const HabitTracker = ({
   const handleClick = async (incr: number) => {
     const newCount = count + incr;
     setCount(newCount);
-    chrome.storage.local.set(
-      { [habit]: newCount, updateDate: getToday() },
-      function () {},
-    );
+    browser.storage.local.set({ [habit]: newCount, updateDate: getToday() });
     if (newCount >= 100) {
       await callbackFunction();
     }
@@ -306,6 +293,7 @@ const HabitTracker = ({
 export default HabitTracker;
 
 export const Daily = () => {
+  const [init, setInit] = React.useState(false);
   const [inputEntryType, setInputEntryType] = React.useState('LIST');
   const [inputEntryValue, setInputEntryValue] = React.useState('');
   const [todayContent, setTodayContent] = React.useState<JSX.Element>();
@@ -368,7 +356,17 @@ export const Daily = () => {
     );
   };
   useEffect(() => {
-    updateJournal();
+    if (!init) {
+      getLogseqCopliotConfig().then((config) => {
+        console.log(config);
+        setInit(true);
+        client.apiKey = config?.logseqAuthToken || '';
+        client.url = config?.logseqHostName || '';
+        client.port = config?.logseqPort || 0;
+        console.log(client);
+        updateJournal();
+      });
+    }
   }, []);
   useEffect(() => {
     if (dailyRef.current) {
@@ -416,7 +414,19 @@ export const Daily = () => {
 };
 
 export const greetingRenderer = () => {
-  const [userName, setUserName] = React.useState('Lite. C');
+  const [init, setInit] = React.useState(false);
+  const [userName, setUserName] = React.useState('');
+  useEffect(() => {
+    if (!init) {
+      getLogseqCopliotConfig().then((config) => {
+        console.log(config);
+        setInit(true);
+        setUserName(config?.userName || '');
+        console.log('set userName: ', config?.userName);
+      });
+    }
+  }, []);
+
   const getGreetings = (userName: string): string => {
     const e = new Date().getHours();
     let g = 'Good evening, ';

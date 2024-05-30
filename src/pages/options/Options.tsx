@@ -29,7 +29,7 @@ const Options = () => {
 
           <Divider />
 
-          <ClipNoteOptions />
+          {/* <ClipNoteOptions /> */}
         </Flex>
       </Flex>
     </Container>

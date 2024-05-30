@@ -76,46 +76,46 @@ const quickCapture = async (data: string) => {
   const { clipNoteLocation, clipNoteCustomPage, clipNoteTemplate } =
     await getLogseqCopliotConfig();
   const now = new Date();
-  const resp = await logseqClient.getUserConfig();
+  // const resp = await logseqClient.getUserConfig();
 
-  const block = blockRending({
-    url: activeTab.url,
-    title: activeTab.title,
-    data,
-    clipNoteTemplate,
-    preferredDateFormat: resp['preferredDateFormat'],
-    time: now,
-  });
+  // const block = blockRending({
+  //   url: activeTab.url,
+  //   title: activeTab.title,
+  //   data,
+  //   clipNoteTemplate,
+  //   preferredDateFormat: resp['preferredDateFormat'],
+  //   time: now,
+  // });
 
-  if (clipNoteLocation === 'customPage') {
-    await logseqClient.appendBlock(clipNoteCustomPage, block);
-  } else if (clipNoteLocation === 'currentPage') {
-    const { name: currentPage } = await logseqClient.getCurrentPage();
-    await logseqClient.appendBlock(currentPage, block);
-  } else {
-    const journalPage = format(now, resp['preferredDateFormat']);
-    await logseqClient.appendBlock(journalPage, block);
-  }
+  // if (clipNoteLocation === 'customPage') {
+  //   await logseqClient.appendBlock(clipNoteCustomPage, block);
+  // } else if (clipNoteLocation === 'currentPage') {
+  //   const { name: currentPage } = await logseqClient.getCurrentPage();
+  //   await logseqClient.appendBlock(currentPage, block);
+  // } else {
+  //   const journalPage = format(now, resp['preferredDateFormat']);
+  //   await logseqClient.appendBlock(journalPage, block);
+  // }
 
-  debounceBadgeSearch(activeTab.url, activeTab.id!);
+  // debounceBadgeSearch(activeTab.url, activeTab.id!);
 };
 
-browser.tabs.onActivated.addListener((activeInfo) => {
-  const promise = new Promise(async () => {
-    const tab = await browser.tabs.get(activeInfo.tabId);
-    await debounceBadgeSearch(tab.url, activeInfo.tabId);
-  });
-  promise.catch((err) => console.error(err));
-});
+// browser.tabs.onActivated.addListener((activeInfo) => {
+//   const promise = new Promise(async () => {
+//     const tab = await browser.tabs.get(activeInfo.tabId);
+//     await debounceBadgeSearch(tab.url, activeInfo.tabId);
+//   });
+//   promise.catch((err) => console.error(err));
+// });
 
-browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (tab.active && changeInfo.status === 'complete') {
-    const promise = new Promise(async () => {
-      await debounceBadgeSearch(tab.url, tabId);
-    });
-    promise.catch((err) => console.error(err));
-  }
-});
+// browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+//   if (tab.active && changeInfo.status === 'complete') {
+//     const promise = new Promise(async () => {
+//       await debounceBadgeSearch(tab.url, tabId);
+//     });
+//     promise.catch((err) => console.error(err));
+//   }
+// });
 
 const badgeSearch = async (url: string | undefined, tabId: number) => {
   if (!url) return;
