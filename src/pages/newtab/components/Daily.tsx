@@ -228,7 +228,8 @@ const HabitTracker = ({
       const today = getToday();
       console.log(result);
       if (result.updateDate !== today || !result[habit]) {
-        browser.storage.local.set({ [habit]: 0, updateDate: today });
+        Browser.storage.local.set({ updateDate: today });
+        Browser.storage.local.set({ [habit]: 0 });
         setCount(0);
       } else {
         if (result[habit] >= 100) {
@@ -259,7 +260,7 @@ const HabitTracker = ({
   const handleClick = async (incr: number) => {
     const newCount = count + incr;
     setCount(newCount);
-    browser.storage.local.set({ [habit]: newCount, updateDate: getToday() });
+    Browser.storage.local.set({ [habit]: newCount, updateDate: getToday() });
     if (newCount >= 100) {
       await callbackFunction();
     }
