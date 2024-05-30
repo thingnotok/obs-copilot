@@ -1679,7 +1679,7 @@ export const Prompts = {
 };
 
 export const CATEGORIES = {
-  0: {
+  '0': {
     backgroundColor: '#AFDEE5',
     color: '#1cd1a1',
     desc: "It's time to set your priorities and get things done. For the hustlers, the dreamers, and the doers, go get em tiger!",
@@ -1769,7 +1769,7 @@ export const CATEGORIES = {
     ],
     type: 'short',
   },
-  1: {
+  '1': {
     backgroundColor: '#E2D0F5',
     color: '#ff9ff3',
     desc: 'You like to quantify your day through lists. Organization, tracking, and order is your thing. Sum it up with just 3 things to bring out the clarity needed to reach mental peace.',
@@ -1824,7 +1824,7 @@ export const CATEGORIES = {
     ],
     type: 'short',
   },
-  2: {
+  '2': {
     backgroundColor: '#C1D5FB',
     color: '#54a0ff',
     desc: "Keep a log of your memories — from the greatest highs to the lowest lows. Your life's too wild to let these stories be forgotten.",
@@ -1954,7 +1954,7 @@ export const CATEGORIES = {
     ],
     type: 'short',
   },
-  3: {
+  '3': {
     backgroundColor: '#E5AFAF',
     color: '#FFC89C',
     desc: 'Sometimes self-care means taking a moment to reflect on who you are, your life, and the meaning of your experiences. Go ahead, dig deeper. Only you can truly figure out who you are.',
@@ -2120,7 +2120,7 @@ export const CATEGORIES = {
     ],
     type: 'long',
   },
-  4: {
+  '4': {
     backgroundColor: '#c8d6e5',
     color: '#9c9c9c',
     desc: "Don't need a prompt? This is the one for you.",
@@ -2130,7 +2130,7 @@ export const CATEGORIES = {
     promptIds: ['46'],
     type: 'long',
   },
-  5: {
+  '5': {
     backgroundColor: '#bb99ff',
     color: '#8142ff',
     desc: "You like writing but don't know what to write? We have some thought-provoking prompts to help you get started crafting your most interesting story. Channel your inner writer!",

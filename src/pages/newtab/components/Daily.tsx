@@ -1,6 +1,6 @@
 import { createGlobalStyle } from 'styled-components';
 import { LogseqBlockType, LogseqPageIdenity } from '../../../types/logseqBlock';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from '../Newtab.module.scss';
 import { Prompts, CATEGORIES } from './Journaling';
 import {
@@ -10,562 +10,424 @@ import {
   Text,
   Link,
   Divider,
+  background,
 } from '@chakra-ui/react';
 
-// import chrome;
+import { reflectRenderer } from './Reflect';
+// import chrome from 'chrome';
+
+import { client } from '@pages/logseq/client';
 import {
-  getLogseqCopliotConfig,
-  saveLogseqCopliotConfig,
-  LogseqCopliotConfig,
-} from '@/config';
-import LogseqClient from '@pages/logseq/client';
-import { IconRefresh } from '@tabler/icons-react';
-const client = new LogseqClient();
+  getToday,
+  getCurrentTimeList,
+  getCurrentDateDay,
+} from '@pages/newtab/components/Utils';
 
-const checkConnection = async (): Promise<boolean> => {
-  const resp = await client.getVersion();
-  const connectStatus = resp.msg === 'success';
-  return connectStatus;
-};
+interface Node {
+  text: string;
+  level: number;
+  children: Node[];
+  parent?: Node | null;
+}
 
-async function replaceRef(raw) {
-  const regex = /\(\((.*?)\)\)/g;
-  let parts = [];
-  let lastIndex = 0;
-  let match;
+function treeToMarkdown(node: Node): string {
+  let markdown = '';
 
-  while ((match = regex.exec(raw)) !== null) {
-    const textBeforeMatch = raw.substring(lastIndex, match.index);
-    if (textBeforeMatch) {
-      parts.push(textBeforeMatch);
+  function traverse(node: Node, level: number) {
+    if (level < 0) {
+      markdown = '';
+    } else {
+      const tabs = '\t'.repeat(level);
+      markdown += `${tabs}${node.text}\n`;
     }
-    const refUuid = match[1];
-    if (refUuid) {
-      let content = (await client.getBlockViaUuid(refUuid)).content;
-      content = content.replace(/id:: .{36}/g, '').trim();
-      if (content) {
-        parts.push(`<<ref:::graph/Mars?block-id=${refUuid}:::${content}>>`);
-      }
+    for (const child of node.children) {
+      traverse(child, level + 1);
     }
-    lastIndex = regex.lastIndex;
   }
-  if (lastIndex !== raw.length) {
-    parts.push(raw.substring(lastIndex));
-  }
-  return parts.join('');
+  traverse(node, -1); // start with level -1 because root node doesn't need a tab
+  return markdown.slice(0, -1);
 }
 
-function replaceRefBrac(raw) {
-  const regex = /\[\[(.*?)\]\]/g;
-  let parts = [];
-  let lastIndex = 0;
-  let match;
+function createTree(markdown: string): Node {
+  const lines = markdown.split('\n');
+  const root: Node = { children: [], level: -1, text: '', parent: null };
+  let currentParent: Node = root;
 
-  while ((match = regex.exec(raw)) !== null) {
-    const textBeforeMatch = raw.substring(lastIndex, match.index);
-    if (textBeforeMatch) {
-      parts.push(textBeforeMatch);
-    }
-    const pageName = match[1];
-    if (pageName) {
-      parts.push(`<<ref:::graph/Mars?page=${pageName}:::[[${pageName}]]>>`);
-    }
-    lastIndex = regex.lastIndex;
-  }
-  if (lastIndex !== raw.length) {
-    parts.push(raw.substring(lastIndex));
-  }
-  return parts.join('');
-}
-function replaceRefTag(raw) {
-  const regex = /#(.*?) /g;
-  let parts = [];
-  let lastIndex = 0;
-  let match;
-
-  while ((match = regex.exec(raw)) !== null) {
-    const textBeforeMatch = raw.substring(lastIndex, match.index);
-    if (textBeforeMatch) {
-      parts.push(textBeforeMatch);
-    }
-    const pageName = match[1];
-    if (pageName) {
-      parts.push(`<<ref:::graph/Mars?page=${pageName}:::#${pageName} >>`);
-    }
-    lastIndex = regex.lastIndex;
-  }
-  if (lastIndex !== raw.length) {
-    parts.push(raw.substring(lastIndex));
-  }
-  return parts.join('');
-}
-
-function replaceTimeWithBold(heading) {
-  // console.log('head');
-  // console.log(heading);
-  // 從字符串中提取子字符串
-  const timeSubstring = heading.slice(0, 5);
-
-  // 正則表達式來檢查時間格式 hh:mm
-  const timePattern = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-
-  // 檢查是否匹配時間格式
-  if (timePattern.test(timeSubstring)) {
-    // 替換時間格式為加粗的時間並返回
-    return `<<time:::${timeSubstring}>>` + heading.slice(5);
-  }
-  // 如果不匹配，返回原始字符串
-  return heading;
-}
-function replaceTaskStatus(heading) {
-  // console.log('head');
-  // console.log(heading);
-  const taskStatus = ['TODO', 'DONE'];
-  let content = heading;
-  taskStatus.forEach((status) => {
-    const statusPattern = new RegExp(status, 'g');
-    content = content.replace(statusPattern, `<<${status}>>`);
-  });
-  return content;
-}
-
-async function convertNodeToJSX(node, depth = 0) {
-  let content = node.content;
-  const nodeUuid = node.uuid;
-  let content_ = await replaceRef(content);
-  //get if time:
-  content_ = replaceTimeWithBold(content_);
-  content_ = replaceTaskStatus(content_);
-  content_ = replaceRefBrac(content_);
-  content_ = replaceRefTag(content_);
-  // console.log(content_ref_time);
-
-  const tokenReplacements = {
-    TODO: () => <div className={styles.tokenTODO}>TODO</div>,
-    DONE: () => <div className={styles.tokenDONE}>DONE</div>,
-    DOING: () => <div className={styles.tokenDOING}>DOING</div>,
-    time: (content) => <div className={styles.tokenTime}>{content}</div>,
-    ref: (uuid, content) => {
-      return (
-        <a className={styles.tokenRef} href={`logseq://${uuid}`}>
-          {content}
-        </a>
-      );
-    },
-  };
-
-  const processString = (str) => {
-    // 使用正則表達式分割字串
-    const parts = str.split(/(<<.*?>>)/).filter((part) => part !== '');
-
-    const jsxArray = parts.map((part) => {
-      if (part.startsWith('<<') && part.endsWith('>>')) {
-        const content = part.slice(2, -2); // 移除<<和>>
-        const [token, ...args] = content.split(':::');
-        if (token in tokenReplacements) {
-          // 如果找到對應的token，則調用對應函數
-          const func = tokenReplacements[token];
-          return func(...args);
-        } else {
-          // 如果沒有找到對應的token，則將原始字串作為JSX元素返回
-          return part;
-        }
-      } else {
-        // 對於普通字串，直接作為JSX元素返回
-        return part;
-      }
-    });
-
-    // 將處理後的JSX陣列以<></>包裝後返回
-    return <>{jsxArray}</>;
-  };
-  const replaceJSX = processString(content_);
-  let blocks = [
-    <Text>
-      <div>{replaceJSX}</div>
-      <a
-        className={styles.dailyP}
-        href={`logseq://graph/Mars?block-id=${nodeUuid}`}
-      >
-        🚪
-      </a>
-    </Text>,
-  ];
-
-  if (node.children && node.children.length > 0) {
-    const childrenJSX = await Promise.all(
-      node.children.map((child) => convertNodeToJSX(child, depth + 1)),
-    );
-    const flattened_array = childrenJSX.flat();
-    const k = flattened_array.map((v) => {
-      return <div className={styles.e1}>{v}</div>;
-    });
-    blocks = [...blocks, ...k];
-  }
-  return blocks;
-}
-
-// convertNodeArrayToJSX 函數保持不變
-
-async function convertNodeArrayToJSX(inputArray: any[]) {
-  const jsxArray = await Promise.all(
-    inputArray.map(async (input: any, index: any) => {
-      const convertedInput = await convertNodeToJSX(input);
-      return convertedInput;
-    }),
-  );
-  const flat = jsxArray.flat();
-  // 使用 <div> 将所有 jsxArray 的元素包裹起来
-  return (
-    <>
-      {flat.map((element, index) => (
-        <div>{element}</div>
-      ))}
-    </>
-  );
-}
-
-function getCurrentDateFormatted() {
-  const daysOfWeek = [
-    'Sunday',
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-  ];
-
-  const monthsOfYear = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
-
-  const now = new Date();
-
-  const dayOfWeek = daysOfWeek[now.getDay()];
-  const month = monthsOfYear[now.getMonth()];
-  const day = now.getDate();
-  const year = now.getFullYear();
-
-  return `${dayOfWeek} ${month} ${day}, ${year}`;
-}
-
-// function getCurrentTimeFormatted() {
-//   const now = new Date();
-
-//   const hours = now.getHours().toString().padStart(2, '0');
-//   const minutes = now.getMinutes().toString().padStart(2, '0');
-
-//   return `${hours}:${minutes}`;
-// }
-
-function getCurrentTimeList(modes='hh:mm') {
-  const now = new Date();
-  const minutes = now.getMinutes().toString().padStart(2, '0');
-  const hours =  now.getHours().toString().padStart(2, '0');
-  const seconds = now.getSeconds().toString().padStart(2, '0');
-  if(modes==='hh:mm:ss')
-    return [hours, minutes, seconds].join(":")
-  else if(modes==='ss')
-    return seconds
-  else
-    return [hours, minutes].join(":");
-}
-
-function Clock() {
-  // 使用useState鉤子來創建一個狀態變量currentTime，用於存儲當前的時間
-  const [currentTime, setCurrentTime] = React.useState(getCurrentTimeList('hh:mm'));
-  const [currentSec, setCurrentSec] = React.useState(':'+getCurrentTimeList('ss'));
-
-  // 使用useEffect鉤子來處理側效，即定時更新currentTime
-  useEffect(() => {
-    // 設置定時器，每秒更新一次時間
-    const timerId = setInterval(() => {
-      const current = getCurrentTimeList('hh:mm:ss')
-      setCurrentTime(current.slice(0,5)); // 更新currentTime的值
-      setCurrentSec(current.slice(5))
-    }, 1000); // 每1000毫秒更新一次，即每秒更新一次
-
-    // 清理函數，當組件卸載時清除定時器
-    return () => {
-      clearInterval(timerId);
+  for (const line of lines) {
+    const level = line.lastIndexOf('\t') + 1;
+    const node: Node = {
+      level,
+      text: line.trim(),
+      children: [],
+      parent: currentParent,
     };
-  }, []); // 空依賴數組表示這個效果只在組件掛載時運行一次
 
-  // 渲染顯示當前時間
-  return (
-    <div className={styles.clock}>
-      <Heading>{currentTime}</Heading><Text>{currentSec}</Text>
+    if (level === currentParent.level + 1) {
+      currentParent.children.push(node);
+    } else {
+      let parent = currentParent;
+      while (level <= parent.level && parent.parent) {
+        parent = parent.parent;
+      }
+      parent.children.push(node);
+      node.parent = parent;
+    }
+
+    currentParent = node;
+  }
+
+  return root;
+}
+
+const TaskRenderer = ({
+  node,
+  tree,
+  update,
+  onDoubleClick,
+}: {
+  node: Node;
+  tree: Node;
+  update: () => void;
+  onDoubleClick: () => void;
+}) => {
+  // const [isChecked, setIsChecked] = useState(false);
+  let text = node.text;
+  let isChecked = false;
+  if (text.startsWith('- [ ]')) {
+    text = text.slice(6);
+    isChecked = false;
+    // setIsChecked(false);
+  } else {
+    text = text.slice(6);
+    isChecked = true;
+    // setIsChecked(true);
+  }
+  const task = (
+    <div style={{ display: 'flex', alignItems: 'center', marginLeft: '0px' }}>
+      <input
+        type="checkbox"
+        style={{ margin: '3px' }}
+        checked={isChecked}
+        onChange={() => {
+          isChecked = !isChecked;
+          console.log('ischeked', isChecked);
+          if (isChecked) node.text = '- [x] ' + text;
+          else node.text = '- [ ] ' + text;
+          const txt = treeToMarkdown(tree);
+          client.update(`journals/${getToday()}.md`, txt).catch((error) => {
+            console.error('Error in client.update:', error);
+          });
+          console.log(txt);
+          update();
+        }}
+      />
+      <span onDoubleClick={onDoubleClick}>{text}</span>
     </div>
   );
-}
+  return task;
+};
 
-// 這個函數用於獲取格式化的當前時間
-
-
-export default Clock;
-
-
-async function getBase64ImageJPG(imgUrl, callback) {
-  console.log(imgUrl)
-  var img = new Image();
-  img.onload = function() {
-      var canvas = document.createElement("canvas");
-      canvas.width = this.width;
-      canvas.height = this.height;
-
-      var ctx = canvas.getContext("2d");
-      ctx.drawImage(this, 0, 0);
-
-      // 指定轉換格式為JPG
-      var dataURL = canvas.toDataURL("image/jpeg");
-      callback(dataURL);
+const LineRenderer = ({
+  node,
+  tree,
+  update,
+}: {
+  node: Node;
+  tree: Node;
+  update: () => void;
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [textValue, setTextValue] = useState(node.text);
+  const inputFromDailyPanel = async (
+    event: React.KeyboardEvent<HTMLTextAreaElement>,
+  ) => {
+    // 如果按下的是Enter鍵，但不是Shift + Enter組合
+    // if (event.key === 'Enter' && !event.shiftKey) {
+    if (
+      event.key === 'Enter' &&
+      !event.shiftKey &&
+      !event.nativeEvent.isComposing
+    ) {
+      // 按下Enter但沒有按Shift或metaKey
+      event.preventDefault();
+      setIsEditing(false);
+      console.log(treeToMarkdown(tree));
+      client.update(`journals/${getToday()}.md`, treeToMarkdown(tree));
+      update();
+    }
   };
-  img.setAttribute('crossOrigin', 'anonymous'); // 需要圖片支持跨域訪問
-  img.src = imgUrl;
-}
+  const text = node.text;
+  let display;
+  if (text.startsWith('- [ ]') || text.startsWith('- [x]')) {
+    display = (
+      <TaskRenderer
+        node={node}
+        tree={tree}
+        update={update}
+        onDoubleClick={() => setIsEditing(true)}
+      />
+    );
+  } else if (text.startsWith('- ')) {
+    display = <span onDoubleClick={() => setIsEditing(true)}>{textValue}</span>;
+  }
+  return isEditing ? (
+    <textarea
+      value={textValue}
+      style={{ width: '100%', color: 'black' }}
+      onKeyDown={inputFromDailyPanel}
+      onChange={(e) => {
+        setTextValue(e.target.value);
+        node.text = e.target.value;
+      }}
+    />
+  ) : (
+    <>{display}</>
+  );
+};
+
+const MarkdownRenderer = ({
+  markdown,
+  update,
+}: {
+  markdown: string;
+  update: () => void;
+}) => {
+  const tree = createTree(markdown);
+
+  console.log(tree);
+  const renderNode = (node: Node) => {
+    const jsx = [];
+    for (const child of node.children) {
+      jsx.push(renderNode(child));
+    }
+    jsx.unshift(<LineRenderer node={node} tree={tree} update={update} />);
+    // if (text.startsWith('- [ ]') || text.startsWith('- [x]')) {
+    //   jsx.push(<TaskRenderer node={node} tree={tree} update={update} />);
+    // } else if (text.startsWith('- ')) {
+    //   jsx.unshift(<ListRenderer node={node} tree={tree} update={update} />);
+    // }
+    if (node.level < 0) return <>{jsx}</>;
+    else if (node.level === 0)
+      return (
+        <div
+          className={styles.card}
+          style={{
+            marginLeft: '0px',
+            backgroundColor: 'rgba(90, 90, 90, 0.6)',
+          }}
+        >
+          {jsx}
+        </div>
+      );
+    else return <div className={styles.card}>{jsx}</div>;
+  };
+  const c = renderNode(tree);
+  return <>{c}</>;
+};
+
+const HabitTracker = ({
+  habit,
+  update,
+}: {
+  habit: string;
+  update: () => void;
+}) => {
+  const [count, setCount] = useState(0);
+  const [isDisabled, setIsDisabled] = useState(false);
+  useEffect(() => {
+    chrome.storage.local.get(['updateDate', habit], (result: any) => {
+      const today = getToday();
+      console.log(result);
+      if (result.updateDate !== today || !result[habit]) {
+        chrome.storage.local.set({ [habit]: 0, updateDate: today });
+        setCount(0);
+      } else {
+        if (result[habit] >= 100) {
+          setIsDisabled(true);
+        }
+        setCount(result[habit]);
+      }
+    });
+  }, []);
+  const callbackFunction = async () => {
+    console.log('Count reached 100!');
+    setIsDisabled(true);
+    // Add your callback logic here
+    const prefix = '- [x] ';
+    const content = `${habit} 100 !`;
+    const cc = prefix + `${getCurrentTimeList()} ${content}`;
+    const a = await client
+      .append(`journals/${getToday()}.md`, cc)
+      .catch((error) => {
+        if (error.response && error.response.status !== 204) {
+          console.error('Error in client.append:', error);
+        }
+      });
+    update();
+  };
+
+  const handleClick = async (incr: number) => {
+    const newCount = count + incr;
+    setCount(newCount);
+    chrome.storage.local.set(
+      { [habit]: newCount, updateDate: getToday() },
+      function () {},
+    );
+    if (newCount >= 100) {
+      await callbackFunction();
+    }
+  };
+
+  return (
+    <div className={styles.habitTracker}>
+      <p className={styles.habitText}>
+        {habit}: {count}
+      </p>
+      <div className={styles.habitBtnContainer}>
+        <button
+          onClick={() => handleClick(-10)}
+          disabled={isDisabled}
+          className={styles.habitButton}
+        >
+          -
+        </button>
+        <button
+          onClick={() => handleClick(10)}
+          disabled={isDisabled}
+          className={styles.habitButton}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default HabitTracker;
 
 export const Daily = () => {
-  const [init, setInit] = React.useState(false);
-  const [logseqConfig, setLogseqConfig] = React.useState<LogseqCopliotConfig>();
-  const [todayPage, setTodayPage] = React.useState<LogseqPageIdenity>({
-    name: '',
-    id: 0,
-    uuid: '',
-    originalName: '',
-  });
   const [inputEntryType, setInputEntryType] = React.useState('LIST');
   const [inputEntryValue, setInputEntryValue] = React.useState('');
   const [todayContent, setTodayContent] = React.useState<JSX.Element>();
-  const [graphName, setGraphName] = React.useState('');
-  const [userName, setUserName] = React.useState('---');
-  const [wallPaper, setwallPaper] = React.useState('https://source.unsplash.com/random/400%C3%97400/?travel,starnight,sunshine');
-  // Journaling
-  const [promptCat, setPromptCat] = React.useState('0');
-  const [promptId, setPromptId] = React.useState('10');
-  const [jinit, setJInit] = React.useState(true);
-  const [value, setValue] = React.useState('');
-  const textareaRef = React.useRef(null);
-  const hiddenDivRef = React.useRef(null);
-  const dailyRef = React.useRef(null);
-  const bgRef = React.useRef(null);
-  const [tavalue, setTavalue] = React.useState('');
 
-  const toggleInputEntryType = () =>{
+  // Journaling
+  const dailyRef = React.useRef<HTMLDivElement>(null);
+
+  const dailyareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const toggleInputEntryType = () => {
     if (inputEntryType == 'LIST') setInputEntryType('TODO');
     else setInputEntryType('LIST');
-  }
+  };
   // input from daily panel
-  const inputFromDailyPanel = async (event) => {
+  const inputFromDailyPanel = async (
+    event: React.KeyboardEvent<HTMLTextAreaElement>,
+  ) => {
     // 如果按下的是Enter鍵，但不是Shift + Enter組合
     // if (event.key === 'Enter' && !event.shiftKey) {
-      if (event.key === 'Enter' && !event.shiftKey  && !event.nativeEvent.isComposing) {
-
+    if (
+      event.key === 'Enter' &&
+      !event.shiftKey &&
+      !event.nativeEvent.isComposing
+    ) {
       if (event.metaKey) {
         // 如果同時按下了metaKey（Mac上的Command鍵，Windows上的Windows鍵）
         toggleInputEntryType();
       } else {
         // 按下Enter但沒有按Shift或metaKey
-        const prefix = inputEntryType === "TODO" ? "TODO " : "";
-        const cc = prefix + `${getCurrentTimeList()} ${event.target.value}`;
-        const resp = await client.appendBlock(todayPage.uuid, cc);
+        event.preventDefault();
+        const prefix = inputEntryType === 'TODO' ? '- [ ] ' : '- ';
+        const content = (event.target as HTMLTextAreaElement).value;
+        const cc = prefix + `${getCurrentTimeList()} ${content}`;
+        client.append(`journals/${getToday()}.md`, cc);
         setInputEntryValue(''); // 清空輸入框
-        updateJournal(todayPage); // 更新日誌（這裡假設你已經有相應的函數處理日誌更新）
+        updateJournal(); // 更新日誌（這裡假設你已經有相應的函數處理日誌更新）
       }
     }
     // 如果是Shift + Enter組合，這裡什麼也不做
   };
-  const inputEntryUpdate = (event) => {
+  const inputEntryUpdate = (event: {
+    target: { value: React.SetStateAction<string> };
+  }) => {
     setInputEntryValue(event.target.value); // 更新狀態以反映輸入框內的變化
   };
 
-  const updatePrompt = () => {
-    // console.log('next');
-    // setJInit(true);
-    const randomCat = Math.floor(Math.random() * 4);
-      const bags = CATEGORIES[`${randomCat}`].promptIds;
-      const randomIndex = Math.floor(Math.random() * bags.length);
-      const promptId = bags[randomIndex];
-      setPromptCat(randomCat);
-      setPromptId(promptId);
-  };
-  const updateJournal = async (_todaypage: LogseqPageIdenity) => {
-    const tree = await client.getPageBlocksTree(_todaypage);
-    convertNodeArrayToJSX(tree).then((contents) => {
-      setTodayContent(contents);
-    });
-  };
-  const writeDown = async (line: any) => {
-    const cc = `${getCurrentTimeList()} #${CATEGORIES[promptCat].name} ${
-      Prompts[promptId].prompt
-    }`;
-    const resp = await client.appendBlock(todayPage.uuid, cc);
-    // console.log(resp)
-    await client.appendBlock(resp.uuid, line);
-    textareaRef.current.rows = 1;
-    updatePrompt();
-    await updateJournal(todayPage);
-    setTavalue('');
-    setValue('');
-  };
-  const handleKeyDown = (event) => {
-    if (event.key === 'Enter' && !event.metaKey && !event.shiftKey && !event.nativeEvent.isComposing) {
-      writeDown(event.target.value);
-    } else if (event.key === 'Enter' && event.metaKey && !event.nativeEvent.isComposing) {
-      updatePrompt();
-    }
-  };
-  
-  const handleChange = (e: { target: { value: any } }) => {
-    // console.log('input');
-    // console.log({ a: e.target.value });
-    let value = e.target.value;
-    setTavalue(value);
-    if (value.slice(-1) == '\n') value = value + 'a';
-    // console.log({ a: value });
-    setValue(value);
-  };
-  const updateRows = () => {
-    if (hiddenDivRef.current && textareaRef.current) {
-      const divHeight = hiddenDivRef.current.offsetHeight;
-      // console.log(divHeight);
-      const newRows = divHeight < 30 ? 1 : Math.ceil(divHeight / 30);
-      // console.log(newRows);
-      textareaRef.current.rows = newRows>4?4:newRows;
+  const updateJournal = async () => {
+    console.log('updateJournal');
+    const content = await client.baseFetch();
+    let data = '';
+    if (content.body) {
+      const arrayBuffer = await content.arrayBuffer();
+      data = new TextDecoder('utf-8').decode(new Uint8Array(arrayBuffer));
     } else {
-      textareaRef.current.rows = 1;
+      console.error('content.body is null');
     }
+    setTodayContent(
+      <div className="dailyContent">
+        <MarkdownRenderer markdown={data} update={updateJournal} />
+      </div>,
+    );
   };
   useEffect(() => {
-    if (!init) {
-      updatePrompt();
-      getLogseqCopliotConfig().then((config) => {
-        setLogseqConfig(config);
-        setInit(true);
-        if (config.logseqAuthToken === '') {
-          console.log("Failed")
-          return;
-        }
-        const promise = new Promise(async () => {
-          const connectionStatus = await checkConnection();
-          if(connectionStatus) {
-            setUserName(config.userName)
-            setwallPaper(config.wallPaper)
-            const _todaypage = await client.getJournalToday();
-            setTodayPage(_todaypage);
-            await updateJournal(_todaypage);
-          }
-          else
-          setUserName("Connection Failed")
-        });
-        promise.then(console.log).catch(console.error);
-      });
-      if(bgRef.current){
-        chrome.storage.local.get(['cachedImg'], function(result) {
-        bgRef.current.style.backgroundImage = 'url("' + result.cachedImg + '")';
-        getBase64ImageJPG(wallPaper, (base64Image)=>{
-        chrome.storage.local.set({"cachedImg": base64Image}, function() {
-          });
-        })
-        console.log('Set cached')
-        // }
-      });
-    }
-    }
-    // move to bottom
+    updateJournal();
+  }, []);
+  useEffect(() => {
     if (dailyRef.current) {
       dailyRef.current.scrollTop = dailyRef.current.scrollHeight;
     }
-    updateRows();
-    window.addEventListener('resize', updateRows);
-    return () => {
-      window.removeEventListener('resize', updateRows);
-    };
-  }, [value, todayContent, todayPage, jinit, tavalue]);
+  }, [todayContent]);
 
-  const greetingRenderer = () => {
+  return (
+    <div className={styles.dailyContainer}>
+      <a href={`obsidian://open?vault=LiteC-Mars&file=${getToday()}.md`}>
+        <h2>{getCurrentDateDay()}</h2>
+      </a>
+      <div
+        style={{
+          paddingLeft: '20px',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <HabitTracker habit={'Squat'} update={updateJournal} />
+        <HabitTracker habit={'PushUp'} update={updateJournal} />
+      </div>
+      <div className={styles.daily} ref={dailyRef}>
+        {todayContent}
+      </div>
+      <div className={styles.dailyFooter}>
+        <div className={styles.leftSpacer}>
+          <Text
+            className={styles.dailyInputEntry}
+            onClick={toggleInputEntryType}
+          >
+            {inputEntryType}
+          </Text>
+        </div>
+        <textarea
+          rows={1}
+          ref={dailyareaRef}
+          onChange={inputEntryUpdate}
+          onKeyDown={inputFromDailyPanel}
+          value={inputEntryValue}
+        />
+      </div>
+    </div>
+  );
+};
+
+export const greetingRenderer = () => {
+  const [userName, setUserName] = React.useState('Lite. C');
+  const getGreetings = (userName: string): string => {
     const e = new Date().getHours();
-    const g =
-      e > 3 && e < 12
-        ? 'Good morning, '
-        : e >= 12 && e < 18
-        ? 'Good afternoon, '
-        : 'Good evening, ';
-    return (
-      <div className={styles.greet}>
-        <Heading>
-          {g}
-          {userName}
-        </Heading>
-        <Text>{getCurrentDateFormatted()}</Text>
-      </div>
-    );
-  };
-  const dailyPanelRenderer = () => {
-    return (
-      // <Flex direction={'column'} w="80vw">
-      <div className={styles.dailyContainer}>
-        <a href={`logseq://graph/Mars?page=${todayPage.name}`}>
-          <h2>{getCurrentDateFormatted()}</h2>
-        </a>
-        <div className={styles.daily} ref={dailyRef}>
-          {todayContent}
-        </div>
-        <div className={styles.dailyFooter}>
-          <div className={styles.leftSpacer}>
-            <Text
-              className={styles.dailyInputEntry}
-              onClick={toggleInputEntryType}
-            >
-              {inputEntryType}
-            </Text>
-          </div>
-          <textarea rows={1} onChange={inputEntryUpdate} onKeyDown={inputFromDailyPanel} value={inputEntryValue} />
-        </div>
-      </div>
-    );
-  };
-  const reflectRenderer = () => {
-    return (
-      <div className={styles.mainPanel}>
-        {Clock()}
-        <div className={styles.journaling}>
-          <Heading>
-            {'#' + CATEGORIES[promptCat].name + ' '}
-            {Prompts[promptId].prompt}
-            <IconRefresh size={16} onClick={updatePrompt} />
-          </Heading>
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            value={tavalue}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-          />
-          <div ref={hiddenDivRef} className={styles.calcDiv}>
-            {value}
-          </div>
-        </div>
-      </div>
-    );
+    let g = 'Good evening, ';
+    if (e > 3 && e < 12) g = 'Good morning, ';
+    else if (e >= 12 && e < 18) g = 'Good afternoon, ';
+    return g + userName;
   };
   return (
-    <>
-      <div className={styles.fullscreenBg} ref={bgRef}></div>
-      {greetingRenderer()}
-      {dailyPanelRenderer()}
-      {reflectRenderer()}
-    </>
+    <div className={styles.greet}>
+      <Heading>{getGreetings(userName)}</Heading>
+      <Text>{getCurrentDateDay()}</Text>
+    </div>
   );
 };
