@@ -30,6 +30,8 @@ To use this extension, you need to have Obsidian installed.
 
 - The new tab page is inspired by [Ponder](https://chromewebstore.google.com/detail/ponder/iahlambfobindandliebffikfgfmppom). All reflection prompts are sourced from this extension.
 - This extension is a modification of [Logseq Copilot](https://logseq-copilot.eindex.me/).
+- Prompts are collected from [Ready, Set, Journal! 64 Journaling Prompts for Self-Discovery
+](https://psychcentral.com/blog/ready-set-journal-64-journaling-prompts-for-self-discovery#takeaway)
 
 ## License
 
