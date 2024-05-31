@@ -26,13 +26,13 @@ const build = (releaseFor) => {
   return {
     manifest_version: 3,
     // version: process.env.VERSION.replace('v', ''),
-    version: '1.15.0',
-    author: 'eindex.lee@gmail.com',
-    name: 'Logseq Copilot',
+    version: '0.1.0',
+    author: 'thingnotok@gmail.com',
+    name: 'Obsidian Copilot',
     description:
-      'Logseq Copilot, Connect with you logseq API server, bring your information when you browsing.',
+      'Obsidian Copilot, Connect with you Obsidian API server, bring your information when you browsing.',
     chrome_url_overrides: {
-      newtab:'newtab.html'
+      newtab: 'newtab.html'
     },
     icons: {
       192: 'assets/img/logo-192.png',

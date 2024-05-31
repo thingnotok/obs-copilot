@@ -1,6 +1,6 @@
 {
   "name": "logseq-copliot",
-  "version": "1.6.0",
+  "version": "0.1.0",
   "description": "Logseq Copilot, Connect with you logseq API server, bring your information when you browsing.",
   "license": "MIT",
   "repository": {
