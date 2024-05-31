@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Browser from 'webextension-polyfill';
 import styles from '../Newtab.module.scss';
-import { Prompts, CATEGORIES } from './Journaling';
+import { Prompts } from './Journaling';
 import { Heading, Text } from '@chakra-ui/react';
 import { IconRefresh } from '@tabler/icons-react';
 import {
@@ -488,12 +488,8 @@ export const reflectRenderer = (update: () => {}) => {
   const hiddenDivRef = React.useRef<HTMLDivElement>(null);
   const updatePrompt = () => {
     console.log('update Prompt');
-    const randomCat = Math.floor(Math.random() * 4);
-    const bags = CATEGORIES[`${randomCat}`].promptIds;
-    const randomIndex = Math.floor(Math.random() * bags.length);
-    const promptId = bags[randomIndex];
-    setPromptCat(randomCat);
-    setPromptId(promptId);
+    const randomIndex = Math.floor(Math.random() * Prompts.length);
+    setPromptId(randomIndex);
   };
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (
@@ -518,9 +514,7 @@ export const reflectRenderer = (update: () => {}) => {
 
   const writeDown = async (line: any) => {
     console.log('write down');
-    const cc = `- ${getCurrentTimeList()} #${CATEGORIES[promptCat].name} ${
-      Prompts[promptId].prompt
-    }`;
+    const cc = `- ${getCurrentTimeList()} ${Prompts[promptId]}`;
     client.append(`journals/${getToday()}.md`, cc);
     client.append(`journals/${getToday()}.md`, `\t - ${line}`);
     textareaRef.current.rows = 1;
@@ -549,8 +543,8 @@ export const reflectRenderer = (update: () => {}) => {
       {Clock()}
       <div className={styles.journaling}>
         <Heading>
-          {`#R${CATEGORIES[promptCat].name} `}
-          {Prompts[promptId].prompt}
+          {`#Reflect `}
+          {Prompts[promptId]}
           <IconRefresh size={16} onClick={updatePrompt} />
         </Heading>
         <textarea
