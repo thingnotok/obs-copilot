@@ -100,6 +100,15 @@ export const ClipNoteOptions = () => {
           onChange={onChange}
         />
         <Text fontSize={'md'} mb="0">
+          Journal Location
+        </Text>
+        <Input
+          name="journalFolder"
+          placeholder="Journal Folder"
+          onChange={onChange}
+          value={logseqConfig?.journalFolder}
+        />
+        <Text fontSize={'md'} mb="0">
           Clip Shortcuts
         </Text>
         <Input name="clip-shortcut" value={clipShortCut} readOnly={true} />

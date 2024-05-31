@@ -6,14 +6,14 @@ import { debounce } from '@/utils';
 import { format } from 'date-fns';
 import { changeOptionsHostToHostNameAndPort } from './upgrade';
 import LogseqService from '@pages/logseq/service';
-import { client } from '@pages/logseq/client';
+import ObsidisnClient from '@pages/logseq/client';
 import {
   getToday,
   getCurrentTimeList,
   getCurrentDateDay,
 } from '@pages/newtab/components/Utils';
 const logseqService = new LogseqService();
-
+const client = new ObsidisnClient();
 browser.runtime.onConnect.addListener((port) => {
   port.onMessage.addListener((msg) => {
     if (msg.type === 'query') {

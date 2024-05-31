@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Browser from 'webextension-polyfill';
 import styles from '../Newtab.module.scss';
-import { Prompts } from './Journaling';
 import { Heading, Text } from '@chakra-ui/react';
 import { IconRefresh } from '@tabler/icons-react';
 import {
@@ -10,7 +9,7 @@ import {
   ObsCopilotConfig,
 } from '@/config';
 
-import { client } from '@pages/logseq/client';
+import ObsidianClient from '@pages/logseq/client';
 import {
   getToday,
   getCurrentTimeList,
@@ -23,6 +22,7 @@ interface Node {
   children: Node[];
   parent?: Node | null;
 }
+const client = new ObsidianClient();
 
 function treeToMarkdown(node: Node): string {
   let markdown = '';
@@ -294,10 +294,10 @@ const HabitTracker = ({
 export default HabitTracker;
 
 export const Daily = () => {
-  const [init, setInit] = React.useState(false);
   const [inputEntryType, setInputEntryType] = React.useState('LIST');
   const [inputEntryValue, setInputEntryValue] = React.useState('');
   const [todayContent, setTodayContent] = React.useState<JSX.Element>();
+  const [logseqConfig, setLogseqConfig] = React.useState<ObsCopilotConfig>();
 
   // Journaling
   const dailyRef = React.useRef<HTMLDivElement>(null);
@@ -311,15 +311,12 @@ export const Daily = () => {
   const inputFromDailyPanel = async (
     event: React.KeyboardEvent<HTMLTextAreaElement>,
   ) => {
-    // 如果按下的是Enter鍵，但不是Shift + Enter組合
-    // if (event.key === 'Enter' && !event.shiftKey) {
     if (
       event.key === 'Enter' &&
       !event.shiftKey &&
       !event.nativeEvent.isComposing
     ) {
       if (event.metaKey) {
-        // 如果同時按下了metaKey（Mac上的Command鍵，Windows上的Windows鍵）
         toggleInputEntryType();
       } else {
         // 按下Enter但沒有按Shift或metaKey
@@ -327,12 +324,11 @@ export const Daily = () => {
         const prefix = inputEntryType === 'TODO' ? '- [ ] ' : '- ';
         const content = (event.target as HTMLTextAreaElement).value;
         const cc = prefix + `${getCurrentTimeList()} ${content}`;
-        client.append(`journals/${getToday()}.md`, cc);
-        setInputEntryValue(''); // 清空輸入框
-        updateJournal(); // 更新日誌（這裡假設你已經有相應的函數處理日誌更新）
+        client.append(`${logseqConfig?.journalFolder}/${getToday()}.md`, cc);
+        setInputEntryValue('');
+        updateJournal();
       }
     }
-    // 如果是Shift + Enter組合，這裡什麼也不做
   };
   const inputEntryUpdate = (event: {
     target: { value: React.SetStateAction<string> };
@@ -357,17 +353,14 @@ export const Daily = () => {
     );
   };
   useEffect(() => {
-    if (!init) {
-      getObsCopilotConfig().then((config) => {
-        console.log(config);
-        setInit(true);
-        client.apiKey = config?.AuthToken || '';
-        client.url = config?.HostName || '';
-        client.port = config?.Port || 0;
-        console.log(client);
-        updateJournal();
-      });
-    }
+    getObsCopilotConfig().then((config) => {
+      setLogseqConfig(config);
+      client.apiKey = config?.AuthToken || '';
+      client.url = config?.HostName || '';
+      client.port = config?.Port || 0;
+      console.log(client);
+      updateJournal();
+    });
   }, []);
   useEffect(() => {
     if (dailyRef.current) {
@@ -412,7 +405,7 @@ export const Daily = () => {
           />
         </div>
       </div>
-      {reflectRenderer(updateJournal)}
+      {reflectRenderer(logseqConfig, updateJournal)}
     </>
   );
 };
@@ -479,16 +472,18 @@ const Clock = () => {
   );
 };
 
-export const reflectRenderer = (update: () => {}) => {
-  const [promptCat, setPromptCat] = React.useState(0);
-  const [promptId, setPromptId] = React.useState(10);
+export const reflectRenderer = (config: ObsCopilotConfig, update: () => {}) => {
+  const [Prompts, setPrompts] = React.useState(['']);
+  const [prompt, setPrompt] = React.useState('');
+  const [logseqConfig, setLogseqConfig] = React.useState<ObsCopilotConfig>();
+
+  const [promptId, setPromptId] = React.useState(2);
   const [tavalue, setTavalue] = React.useState('');
   const [value, setValue] = React.useState('');
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const hiddenDivRef = React.useRef<HTMLDivElement>(null);
-  const updatePrompt = () => {
-    console.log('update Prompt');
-    const randomIndex = Math.floor(Math.random() * Prompts.length);
+  const updatePrompt = (prompts: string[]) => {
+    const randomIndex = Math.floor(Math.random() * prompts.length);
     setPromptId(randomIndex);
   };
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -498,10 +493,11 @@ export const reflectRenderer = (update: () => {}) => {
       !event.shiftKey &&
       !event.nativeEvent.isComposing
     ) {
+      event.preventDefault();
       console.log('before write down');
       writeDown(event.target.value);
     } else if (event.key === 'Enter' && event.metaKey) {
-      updatePrompt();
+      updatePrompt(Prompts);
     }
   };
 
@@ -513,39 +509,43 @@ export const reflectRenderer = (update: () => {}) => {
   };
 
   const writeDown = async (line: any) => {
-    console.log('write down');
-    const cc = `- ${getCurrentTimeList()} ${Prompts[promptId]}`;
-    client.append(`journals/${getToday()}.md`, cc);
-    client.append(`journals/${getToday()}.md`, `\t - ${line}`);
+    console.log('write down', prompt);
+    console.log('write down', line);
+    const cc = `- ${getCurrentTimeList()} ${prompt}\n\t - ${line}`;
+    client.append(`${logseqConfig?.journalFolder}/${getToday()}.md`, cc);
+    // client.append(
+    //   `${logseqConfig?.journalFolder}/${getToday()}.md`,
+    //   `\t - ${line}`,
+    // );
     textareaRef.current.rows = 1;
-    updatePrompt();
+    updatePrompt(Prompts);
+    setTavalue('');
     await update();
-    setValue('');
-  };
-
-  const updateRows = () => {
-    if (hiddenDivRef.current && textareaRef.current) {
-      const divHeight = hiddenDivRef.current.offsetHeight;
-      // console.log(divHeight);
-      const newRows = divHeight < 30 ? 1 : Math.ceil(divHeight / 30);
-      // console.log(newRows);
-      textareaRef.current.rows = newRows > 4 ? 4 : newRows;
-    } else {
-      textareaRef.current.rows = 1;
-    }
   };
 
   useEffect(() => {
-    updatePrompt();
+    getObsCopilotConfig().then((config) => {
+      setLogseqConfig(config);
+      setPrompts(config.prompts);
+      updatePrompt(config.prompts);
+    });
   }, []);
+  useEffect(() => {
+    setPrompt(Prompts[promptId]);
+  }, [promptId]);
   return (
     <div className={styles.mainPanel}>
       {Clock()}
       <div className={styles.journaling}>
         <Heading>
           {`#Reflect `}
-          {Prompts[promptId]}
-          <IconRefresh size={16} onClick={updatePrompt} />
+          {prompt}
+          <IconRefresh
+            size={16}
+            onClick={() => {
+              updatePrompt(Prompts);
+            }}
+          />
         </Heading>
         <textarea
           ref={textareaRef}

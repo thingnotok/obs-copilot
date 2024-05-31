@@ -8,8 +8,8 @@ import scssStyles from './index.module.scss';
 const logseqCopilotPopupId = 'logseq-copilot-popup';
 export const zIndex = '2147483647';
 const highlights = CSS.highlights;
-import { client } from '@pages/logseq/client';
-
+import ObsidianClient from '@pages/logseq/client';
+const client = new ObsidianClient();
 const capture = () => {
   const selection = getSelection();
   console.log('capture!!', selection);

@@ -44,7 +44,6 @@ export default class ObsidianClient {
     return resp;
   };
   public append = async (dst: string, content: string) => {
-    console.log(content);
     const endPoint = new URL(`http://${this.url}:${this.port}`);
     const apiUrl = new URL(`${endPoint.origin}/vault/${dst}`);
     const resp = await fetch(apiUrl, {
@@ -105,4 +104,3 @@ export default class ObsidianClient {
     return resp;
   };
 }
-export const client = new ObsidianClient();
