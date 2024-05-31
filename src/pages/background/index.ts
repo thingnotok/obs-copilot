@@ -88,11 +88,13 @@ const quickCapture = async (data: string) => {
     if (data === '') {
       dout = `- ${getCurrentTimeList()} [${activeTab.title}](${activeTab.url})`;
     }
-    client.append(`journals/${getToday()}.md`, dout).catch((error) => {
-      if (error.response && error.response.status !== 204) {
-        console.error('Error in client.append:', error);
-      }
-    });
+    client
+      .append(`${config.journalFolder}/${getToday()}.md`, dout)
+      .catch((error) => {
+        if (error.response && error.response.status !== 204) {
+          console.error('Error in client.append:', error);
+        }
+      });
   });
 };
 

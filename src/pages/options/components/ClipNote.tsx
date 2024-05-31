@@ -81,7 +81,7 @@ export const ClipNoteOptions = () => {
 
   return (
     <>
-      <Heading size={'lg'}>Clip Note</Heading>
+      <Heading size={'lg'}>Log and Clip Destination (Journal)</Heading>
 
       <Grid
         width={'full'}
@@ -91,14 +91,6 @@ export const ClipNoteOptions = () => {
         rowGap={2}
         columnGap={2}
       >
-        <Text fontSize="md" mb="0">
-          Display Floating Button
-        </Text>
-        <Switch
-          name="enableClipNoteFloatButton"
-          isChecked={logseqConfig?.enableClipNoteFloatButton}
-          onChange={onChange}
-        />
         <Text fontSize={'md'} mb="0">
           Journal Location
         </Text>
@@ -108,59 +100,6 @@ export const ClipNoteOptions = () => {
           onChange={onChange}
           value={logseqConfig?.journalFolder}
         />
-        <Text fontSize={'md'} mb="0">
-          Clip Shortcuts
-        </Text>
-        <Input name="clip-shortcut" value={clipShortCut} readOnly={true} />
-        <Text gridColumn={'1 / span 2'} justifySelf={'end'} size={'sm'}>
-          <Link href="https://www.makeuseof.com/open-browser-extensions-keyboard-shortcut/">
-            Guide to change Shortcut for Extension/Add-ons
-          </Link>
-        </Text>
-        <Text fontSize="md">Clip Location</Text>
-        <RadioGroup
-          defaultValue="journal"
-          name="clipNoteLocation"
-          value={logseqConfig?.clipNoteLocation}
-          onChange={onClipNoteLocationSelect}
-        >
-          <Stack spacing={5} direction="row">
-            <Radio value="journal">Journal</Radio>
-            <Radio value="currentPage">Current Page</Radio>
-            <Radio value="customPage">Custom Page</Radio>
-          </Stack>
-        </RadioGroup>
-        <Text fontSize="md">Custom Page</Text>
-        <Select
-          classNamePrefix={'chakra-react-select'}
-          className={styles.selection}
-          isDisabled={logseqConfig?.clipNoteLocation !== 'customPage'}
-          name="customPage"
-          options={allPages}
-          value={{
-            label: logseqConfig?.clipNoteCustomPage,
-            value: logseqConfig?.clipNoteCustomPage,
-          }}
-          onChange={onClipNoteCustomPageSelect}
-        />
-        <Text fontSize="md">Clip Template</Text>
-        <Textarea
-          height={36}
-          name="clipNoteTemplate"
-          onChange={onChange}
-          value={logseqConfig?.clipNoteTemplate}
-        />
-        <Text
-          gridColumn={'1 / span 2'}
-          size={'sm'}
-          justifySelf={'end'}
-        >{`Available params: date, time, title, url, content, dt.`}</Text>
-        <Link
-          href="https://liquidjs.com/tutorials/intro-to-liquid.html"
-          gridColumn={'1 / span 2'}
-          size={'sm'}
-          justifySelf={'end'}
-        >{`The template language follow the LiquidJS.`}</Link>
       </Grid>
     </>
   );
