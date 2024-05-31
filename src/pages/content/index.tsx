@@ -1,8 +1,8 @@
-import { getLogseqCopliotConfig } from '@/config';
+import { getObsCopilotConfig } from '@/config';
 import { fixDuckDuckGoDark } from '@/utils';
 import { createRoot } from 'react-dom/client';
 import Browser from 'webextension-polyfill';
-import { LogseqCopliot } from './LogseqCopliot';
+import { ObsCopliotSidePanel } from './SidePanel';
 import mountQuickCapture from './QuickCapture';
 import searchEngines, {
   Baidu,
@@ -20,16 +20,16 @@ const mount = async (container: Element, query: string) => {
 
   connect.postMessage({ type: 'query', query: query });
 
-  root.render(<LogseqCopliot connect={connect} />);
+  root.render(<ObsCopliotSidePanel connect={connect} />);
 };
 
 async function run(
   searchEngine: Google | Bing | DuckDuckGo | Yandex | SearX | Baidu,
 ) {
-  console.debug('Logseq copliot', window.location.hostname);
+  console.log('Logseq copliot', window.location.hostname);
 
   if (searchEngine instanceof DuckDuckGo) {
-    fixDuckDuckGoDark()
+    fixDuckDuckGoDark();
   }
 
   const query = searchEngine.getQuery();
@@ -57,7 +57,7 @@ if (searchEngine) {
   }
 }
 
-getLogseqCopliotConfig().then(({ enableClipNoteFloatButton }) => {
+getObsCopilotConfig().then(({ enableClipNoteFloatButton }) => {
   if (!enableClipNoteFloatButton) return;
   mountQuickCapture();
 });

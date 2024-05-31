@@ -1,6 +1,6 @@
 import { browser } from '@/browser';
 import LogseqClient from '../logseq/client';
-import { getLogseqCopliotConfig } from '../../config';
+import { getObsCopilotConfig } from '../../config';
 import { blockRending, versionCompare } from './utils';
 import { debounce } from '@/utils';
 import { format } from 'date-fns';
@@ -17,6 +17,7 @@ const logseqService = new LogseqService();
 browser.runtime.onConnect.addListener((port) => {
   port.onMessage.addListener((msg) => {
     if (msg.type === 'query') {
+      console.log('query', msg.query);
       const promise = new Promise(async () => {
         const searchRes = await logseqService.search(msg.query);
         port.postMessage(searchRes);
@@ -78,11 +79,11 @@ const quickCapture = async (data: string) => {
   const tab = await getCurrentTab();
   if (!tab) return;
   const activeTab = tab;
-  getLogseqCopliotConfig().then((config) => {
+  getObsCopilotConfig().then((config) => {
     console.log(config);
-    client.apiKey = config?.logseqAuthToken || '';
-    client.url = config?.logseqHostName || '';
-    client.port = 27123; //config?.logseqPort || 0;
+    client.apiKey = config?.AuthToken || '';
+    client.url = config?.HostName || '';
+    client.port = config?.Port || 0;
     let dout = `- ${getCurrentTimeList()} ${data} [>](${activeTab.url})`;
     if (data === '') {
       dout = `- ${getCurrentTimeList()} [${activeTab.title}](${activeTab.url})`;

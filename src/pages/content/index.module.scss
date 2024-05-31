@@ -1,4 +1,16 @@
 @import url(../../icon.css);
+
+.card {
+  color: #000000;
+  border-radius: 5px;
+  border: gray 1px solid;
+  margin-bottom: 5px;
+  padding: 5px;
+  margin-left: 5px;
+  margin-left: 0px;
+  font-size: small;
+}
+
 @tailwind base;
 
 .copilot {

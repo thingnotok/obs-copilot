@@ -6,7 +6,7 @@ import {
   Link,
   Divider,
 } from '@chakra-ui/react';
-import { LogseqConnectOptions } from './components/Connect';
+import { ObsidianConnectOptions } from './components/Connect';
 import { ClipNoteOptions } from './components/ClipNote';
 import styles from './Options.module.scss';
 
@@ -15,21 +15,14 @@ const Options = () => {
     <Container className={styles.options} maxW={'56rem'} mt={'1rem'}>
       <Flex direction={'row'}>
         <Flex direction={'column'} w={'16rem'}>
-          <Heading>Logseq Copilot</Heading>
-          <Text>
-            <Link
-              href={`https://github.com/EINDEX/logseq-copilot/releases/tag/${process.env.VERSION}`}
-            >
-              {process.env.VERSION}
-            </Link>
-          </Text>
+          <Heading>Obsidian Copilot</Heading>
         </Flex>
         <Flex direction={'column'} w={'40rem'} gap={2}>
-          <LogseqConnectOptions />
+          <ObsidianConnectOptions />
 
           <Divider />
 
-          {/* <ClipNoteOptions /> */}
+          <ClipNoteOptions />
         </Flex>
       </Flex>
     </Container>

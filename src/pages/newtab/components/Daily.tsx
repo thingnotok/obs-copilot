@@ -5,9 +5,9 @@ import { Prompts, CATEGORIES } from './Journaling';
 import { Heading, Text } from '@chakra-ui/react';
 import { IconRefresh } from '@tabler/icons-react';
 import {
-  getLogseqCopliotConfig,
-  saveLogseqCopliotConfig,
-  LogseqCopliotConfig,
+  getObsCopilotConfig,
+  saveObsCopilotConfig,
+  ObsCopilotConfig,
 } from '@/config';
 
 import { client } from '@pages/logseq/client';
@@ -358,12 +358,12 @@ export const Daily = () => {
   };
   useEffect(() => {
     if (!init) {
-      getLogseqCopliotConfig().then((config) => {
+      getObsCopilotConfig().then((config) => {
         console.log(config);
         setInit(true);
-        client.apiKey = config?.logseqAuthToken || '';
-        client.url = config?.logseqHostName || '';
-        client.port = config?.logseqPort || 0;
+        client.apiKey = config?.AuthToken || '';
+        client.url = config?.HostName || '';
+        client.port = config?.Port || 0;
         console.log(client);
         updateJournal();
       });
@@ -378,7 +378,7 @@ export const Daily = () => {
   return (
     <>
       <div className={styles.dailyContainer}>
-        <a href={`obsidian://open?vault=LiteC-Mars&file=${getToday()}.md`}>
+        <a href={`obsidian://open?file=${getToday()}.md`}>
           <h2>{getCurrentDateDay()}</h2>
         </a>
         <div
@@ -422,7 +422,7 @@ export const greetingRenderer = () => {
   const [userName, setUserName] = React.useState('');
   useEffect(() => {
     if (!init) {
-      getLogseqCopliotConfig().then((config) => {
+      getObsCopilotConfig().then((config) => {
         console.log(config);
         setInit(true);
         setUserName(config?.userName || '');

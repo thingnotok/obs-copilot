@@ -1,7 +1,7 @@
 import {
-  LogseqCopliotConfig,
-  getLogseqCopliotConfig,
-  saveLogseqCopliotConfig,
+  ObsCopilotConfig,
+  getObsCopilotConfig,
+  saveObsCopilotConfig,
 } from '@/config';
 import {
   Heading,
@@ -27,36 +27,26 @@ const client = new LogseqClient();
 export const ClipNoteOptions = () => {
   const [init, setInit] = React.useState(false);
 
-  const [logseqConfig, setLogseqConfig] = React.useState<LogseqCopliotConfig>();
+  const [logseqConfig, setLogseqConfig] = React.useState<ObsCopilotConfig>();
   const [allPages, setAllPages] = React.useState([]);
 
   const [clipShortCut, setClipShortCut] = React.useState();
 
   useEffect(() => {
     if (!init) {
-      getLogseqCopliotConfig().then((config) => {
+      getObsCopilotConfig().then((config) => {
         setLogseqConfig(config);
         setInit(true);
       });
 
-      client.getAllPages().then((allPages) => {
-        setAllPages(
-          allPages.map((page) => {
-            return {
-              label: page.originalName,
-              value: page.name,
-            };
-          }),
-        );
-      });
-      Browser.commands
-        .getAll()
-        .then((commands) =>
-          commands.forEach(
-            (command) =>
-              command.name === 'clip' && setClipShortCut(command.shortcut),
-          ),
-        );
+      // Browser.commands
+      //   .getAll()
+      //   .then((commands) =>
+      //     commands.forEach(
+      //       (command) =>
+      //         command.name === 'clip' && setClipShortCut(command.shortcut),
+      //     ),
+      //   );
     }
   });
 
@@ -65,7 +55,7 @@ export const ClipNoteOptions = () => {
       ...logseqConfig,
       [key]: value,
     });
-    saveLogseqCopliotConfig({
+    saveObsCopilotConfig({
       [key]: value,
     });
   };
@@ -113,7 +103,7 @@ export const ClipNoteOptions = () => {
           Clip Shortcuts
         </Text>
         <Input name="clip-shortcut" value={clipShortCut} readOnly={true} />
-        <Text gridColumn={'1 / span 2'} justifySelf={'end'} size={"sm"}>
+        <Text gridColumn={'1 / span 2'} justifySelf={'end'} size={'sm'}>
           <Link href="https://www.makeuseof.com/open-browser-extensions-keyboard-shortcut/">
             Guide to change Shortcut for Extension/Add-ons
           </Link>

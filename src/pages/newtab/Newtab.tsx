@@ -8,9 +8,9 @@ import React, { useEffect } from 'react';
 import { greetingRenderer } from './components/Daily';
 
 import {
-  getLogseqCopliotConfig,
-  saveLogseqCopliotConfig,
-  LogseqCopliotConfig,
+  getObsCopilotConfig,
+  saveObsCopilotConfig,
+  ObsCopilotConfig,
 } from '@/config';
 
 async function getBase64ImageJPG(
@@ -64,7 +64,7 @@ const Newtab = () => {
     };
     console.log('init: ', init);
     if (!init) {
-      getLogseqCopliotConfig().then((config) => {
+      getObsCopilotConfig().then((config) => {
         setInit(true);
         fetchImage(config?.wallPaper);
       });
