@@ -11,7 +11,6 @@ export type ObsCopilotConfig = {
   clipNoteCustomPage: string;
   clipNoteTemplate: string;
   userName: string;
-  vaultName: string;
   wallPaper: string;
 };
 
@@ -25,10 +24,8 @@ export const getObsCopilotConfig = async (): Promise<ObsCopilotConfig> => {
     enableClipNoteFloatButton = false,
     clipNoteLocation = 'journal',
     clipNoteCustomPage = '',
-    clipNoteTemplate = `#[[Clip]] [{{title}}]({{url}})
-{{content}}`,
+    clipNoteTemplate = ``,
     userName = '',
-    vaultName = '',
     wallPaper = 'https://source.unsplash.com/random/400%C3%97400/?travel,starnight,sunshine',
   } = await Browser.storage.local.get();
   return {
@@ -43,7 +40,6 @@ export const getObsCopilotConfig = async (): Promise<ObsCopilotConfig> => {
     clipNoteTemplate,
     userName,
     wallPaper,
-    vaultName,
   };
 };
 

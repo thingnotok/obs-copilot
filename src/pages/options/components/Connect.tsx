@@ -134,13 +134,6 @@ export const ObsidianConnectOptions = () => {
         </InputGroup>
       </Grid>
       <Input
-        name="vaultName"
-        type={'text'}
-        onChange={onChange}
-        value={obsConfig?.vaultName}
-        placeholder="Vault name"
-      />
-      <Input
         name="userName"
         type={'text'}
         onChange={onChange}
