@@ -222,6 +222,8 @@ const HabitTracker = ({
 }) => {
   const [count, setCount] = useState(0);
   const [isDisabled, setIsDisabled] = useState(false);
+  const [logseqConfig, setLogseqConfig] = React.useState<ObsCopilotConfig>();
+
   useEffect(() => {
     async function getHabit() {
       const result = await Browser.storage.local.get([habit, 'updateDate']);
@@ -241,14 +243,13 @@ const HabitTracker = ({
     getHabit();
   }, []);
   const callbackFunction = async () => {
-    console.log('Count reached 100!');
     setIsDisabled(true);
     // Add your callback logic here
     const prefix = '- [x] ';
-    const content = `${habit} 100 !`;
+    const content = `${habit} 10 !`;
     const cc = prefix + `${getCurrentTimeList()} ${content}`;
     const a = await client
-      .append(`journals/${getToday()}.md`, cc)
+      .append(`${logseqConfig?.journalFolder}/${getToday()}.md`, cc)
       .catch((error) => {
         if (error.response && error.response.status !== 204) {
           console.error('Error in client.append:', error);
@@ -261,10 +262,14 @@ const HabitTracker = ({
     const newCount = count + incr;
     setCount(newCount);
     Browser.storage.local.set({ [habit]: newCount, updateDate: getToday() });
-    if (newCount >= 100) {
-      await callbackFunction();
-    }
+    await callbackFunction();
   };
+
+  useEffect(() => {
+    getObsCopilotConfig().then((config) => {
+      setLogseqConfig(config);
+    });
+  }, []);
 
   return (
     <div className={styles.habitTracker}>
